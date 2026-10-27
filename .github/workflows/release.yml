@@ -41,11 +41,15 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          update: true
+          update: false
           cache: true
-          install: >-
-            mingw-w64-x86_64-pkg-config
-            mingw-w64-x86_64-libvips
+
+      - name: Install MinGW dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          sed -i 's|https://mirror.msys2.org/|https://repo.msys2.org/|g' /etc/pacman.d/mirrorlist*
+          pacman --noconfirm -Syy --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-libvips
 
       - name: Install Build Dependencies (Linux)
         if: runner.os == 'Linux'
