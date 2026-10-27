@@ -25,7 +25,6 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     permissions:
       contents: write
-      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,7 +34,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26.0-rc.2"
+          go-version: "1.25.7"
 
       - name: Install MSYS2 and MinGW (Windows)
         if: runner.os == 'Windows'
@@ -89,6 +88,12 @@ jobs:
         run: |
           Get-ChildItem -Path "${{ github.workspace }}\\vips-dev-8.17\\bin" -Filter "*.dll" -Recurse | Move-Item -Destination "${{ github.workspace }}"
         shell: powershell
+
+      - name: Run compiler tests (Linux)
+        if: runner.os == 'Linux'
+        run: go test ./internal/compiler
+        env:
+          GOEXPERIMENT: "jsonv2"
 
       - name: Run GoReleaser (Windows)
         if: runner.os == 'Windows'

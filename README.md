@@ -1,3 +1,5 @@
+> This fork preserves `.lang` files and copies original PNG/JPEG files when optimization cannot reduce their size, including on the first run with caching enabled. The original project is [TBroz15/TesserPack](https://github.com/TBroz15/TesserPack).
+
 <h4>
 This project is currently EXPERIMENTAL! <br />
 Please check if your optimized pack works the same as your original pack does. <br />
