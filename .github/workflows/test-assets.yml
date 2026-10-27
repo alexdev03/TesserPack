@@ -1,0 +1,30 @@
+name: Test asset preservation
+on:
+  push:
+    branches: [main, 'codex/**']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    env:
+      GOEXPERIMENT: jsonv2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.7'
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential meson ninja-build pkg-config libglib2.0-dev libexpat1-dev libjpeg-turbo8-dev libpng-dev libwebp-dev libtiff-dev libgif-dev liblcms2-dev liborc-0.4-dev librsvg2-dev libheif-dev libexif-dev libpoppler-glib-dev libimagequant-dev
+      - name: Build libvips
+        run: |
+          wget -q https://github.com/libvips/libvips/releases/download/v8.17.1/vips-8.17.1.tar.xz
+          tar -xf vips-8.17.1.tar.xz
+          meson setup vips-8.17.1/builddir vips-8.17.1 --prefix=/usr/local
+          ninja -C vips-8.17.1/builddir
+          sudo ninja -C vips-8.17.1/builddir install
+          sudo ldconfig
+      - name: Test compiler
+        run: go test ./internal/compiler -run TestCompilePreservesPNGAndLang -v
