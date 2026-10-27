@@ -49,7 +49,7 @@ jobs:
         shell: msys2 {0}
         run: |
           sed -i 's|https://mirror.msys2.org/|https://repo.msys2.org/|g' /etc/pacman.d/mirrorlist*
-          pacman --noconfirm -Syy --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config mingw-w64-x86_64-libvips
+          pacman --noconfirm -Syy --needed mingw-w64-x86_64-gcc mingw-w64-x86_64-pkg-config
 
       - name: Install Build Dependencies (Linux)
         if: runner.os == 'Linux'
@@ -76,11 +76,6 @@ jobs:
 
       # help me, it took me more than 10 hours, trying to fix libvips and vips-gen omg why windows even exist
       # -tuxebro, 2025
-      - name: Are you sure? LIBVIPS! WHERE'S LIBVIPS? I NEED YOU LIBVIPS!!! Pretty sure. I am viping it, I am libviping it so good! WHERE IS HE??? (Windows)
-        if: runner.os == 'Windows'
-        run: pkg-config --libs --cflags vips
-        shell: msys2 {0}
-
       - name: Fetch libvips (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -92,6 +87,13 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           Get-ChildItem -Path "${{ github.workspace }}\\vips-dev-8.17\\bin" -Filter "*.dll" -Recurse | Move-Item -Destination "${{ github.workspace }}"
+        shell: powershell
+
+      - name: Add MinGW to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "D:\a\_temp\msys64\mingw64\bin" >> $env:GITHUB_PATH
+          echo "$env:GITHUB_WORKSPACE" >> $env:GITHUB_PATH
         shell: powershell
 
       - name: Run compiler tests (Linux)
@@ -106,7 +108,7 @@ jobs:
         with:
           distribution: goreleaser
           version: "latest"
-          args: release --config .goreleaser.windows.yaml
+          args: ${{ github.event_name == 'workflow_dispatch' && 'release --snapshot --clean --config .goreleaser.windows.yaml' || 'release --config .goreleaser.windows.yaml' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CGO_ENABLED: 1
@@ -115,13 +117,20 @@ jobs:
           PKG_CONFIG_PATH: "${{ github.workspace }}\\vips-dev-8.17\\lib\\pkgconfig"
           GOEXPERIMENT: "jsonv2"
 
+      - name: Upload Windows snapshot for verification
+        if: runner.os == 'Windows' && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-snapshot
+          path: dist/*.zip
+
       - name: Run GoReleaser (Linux)
         if: runner.os == 'Linux'
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "latest"
-          args: release --config .goreleaser.linux.yaml
+          args: ${{ github.event_name == 'workflow_dispatch' && 'release --snapshot --clean --config .goreleaser.linux.yaml' || 'release --config .goreleaser.linux.yaml' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CGO_ENABLED: 1
