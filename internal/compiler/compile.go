@@ -136,17 +136,8 @@ func Compile(inPath, originalInPath, outPath, tempPackDir string, conf *types.Te
 		go p.Process(srcFile, outFile, jsonExt, StripJSON)
 	}
 
-	for _, LANGFile := range sortedFiles.LANG {
-		waitGroup.Add(1)
-
-		srcFile := path.Join(inPath, LANGFile)
-		outFile := path.Join(tempPackDir, LANGFile)
-
-		go p.Process(srcFile, outFile, ".lang", StripJSON)
-	}
-
-	// copy the uncompiled files
-	for _, ETCFile := range sortedFiles.ETC {
+	// Language files are not JSON and must be copied without changing their extension.
+	for _, ETCFile := range append(sortedFiles.ETC, sortedFiles.LANG...) {
 		waitGroup.Add(1)
 
 		srcFile := path.Join(inPath, ETCFile)

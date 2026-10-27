@@ -135,6 +135,10 @@ func (c *Cached) Process(srcFile, outFile, ext string, processor types.Processor
 
 	// asset processors tend to skip and not include processedData
 	if processedData == nil {
+		if err := helpers.LinkOrCopy(srcFile, outFile); err != nil {
+			log.Error("Failed to copy original file", "err", err, "file", baseFile)
+			return
+		}
 		c.addToSkipList(hashKey)
 		return
 	}
