@@ -20,9 +20,10 @@ jobs:
   build:
     name: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows, ubuntu]
-    runs-on: ${{ matrix.os }}-latest
+        os: [windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
     steps:
