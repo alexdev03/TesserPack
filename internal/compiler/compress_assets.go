@@ -1,7 +1,11 @@
 package compiler
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/color"
+	"image/png"
 	"runtime"
 	"tesserpack/internal/types"
 
@@ -60,10 +64,26 @@ var CompressPNG types.ProcessorFunc = func(data *[]byte, outFile *string, srcFil
 	defer img.Close()
 
 
-	buf, err := img.PngsaveBuffer(pngOptions)
+	original, err := png.Decode(bytes.NewReader(*data))
+	if err != nil {
+		return nil, nil
+	}
 
+	buf, err := img.PngsaveBuffer(pngOptions)
 	if err != nil {
 		return nil, err
+	}
+
+	// A palette holds at most 256 colours; fall back to a full-colour PNG when quantization loses pixels.
+	if !samePixels(original, buf) {
+		options := *pngOptions
+		options.Palette = false
+		if buf, err = img.PngsaveBuffer(&options); err != nil {
+			return nil, err
+		}
+		if !samePixels(original, buf) {
+			return nil, nil
+		}
 	}
 
 	if (len(buf) >= len(*data)) {
@@ -71,6 +91,29 @@ var CompressPNG types.ProcessorFunc = func(data *[]byte, outFile *string, srcFil
 	}
 
 	return buf, nil
+}
+
+// samePixels reports whether encoded shows the same RGBA pixels as original.
+// The colour of fully transparent pixels is ignored.
+func samePixels(original image.Image, encoded []byte) bool {
+	decoded, err := png.Decode(bytes.NewReader(encoded))
+	if err != nil {
+		return false
+	}
+	a, b := original.Bounds(), decoded.Bounds()
+	if a.Dx() != b.Dx() || a.Dy() != b.Dy() {
+		return false
+	}
+	for y := 0; y < a.Dy(); y++ {
+		for x := 0; x < a.Dx(); x++ {
+			p := color.NRGBA64Model.Convert(original.At(a.Min.X+x, a.Min.Y+y)).(color.NRGBA64)
+			q := color.NRGBA64Model.Convert(decoded.At(b.Min.X+x, b.Min.Y+y)).(color.NRGBA64)
+			if p.A != q.A || (p.A != 0 && p != q) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var CompressJPG types.ProcessorFunc = func(data *[]byte, outFile *string, srcFile *string, conf *types.CompilerConfig) (processedData []byte, err error) {

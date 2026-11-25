@@ -27,4 +27,4 @@ jobs:
           sudo ninja -C vips-8.17.1/builddir install
           sudo ldconfig
       - name: Test compiler
-        run: go test ./internal/compiler -run TestCompilePreservesPNGAndLang -v
+        run: go test ./internal/compiler -v
